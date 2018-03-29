@@ -134,7 +134,6 @@ class CohortOutcomes:
         """ :returns the survival times of the patients in this cohort"""
         return self._simulatedCohort.get_survival_times()
 
-
 class MultiCohort:
     """ simulates multiple cohorts with different parameters """
 
@@ -149,7 +148,7 @@ class MultiCohort:
         self._mortalityProbs = mortality_probs
 
         self._survivalTimes = []      # two dimensional list of patient survival time from each simulated cohort
-        self.overSpecifiedPeriod = [] # list of number of patients survival over x period
+        self._flatSurvivalTimes = [] # list of number of patients survival over x period
         self._meanSurvivalTimes = []   # list of mean patient survival time for each simulated cohort
         self._sumStat_meanSurvivalTime = None
 
@@ -169,17 +168,6 @@ class MultiCohort:
         # after simulating all cohorts
         # summary statistics of mean survival time
         self._sumStat_meanSurvivalTime = Stat.SummaryStat('Mean survival time', self._meanSurvivalTimes)
-
-     #tt#
-    def get_percentage_over(self):
-        """returns the percentage of survivors over 5 years"""
-        count_over = 0
-        for x in self._survivalTimes:
-            if x > 5:
-                count_over += 1
-        return count_over / len (self._survivalTimes)
-
-    #tt#
 
     def get_cohort_mean_survival(self, cohort_index):
         """ returns the mean survival time of an specified cohort
@@ -215,11 +203,24 @@ class MultiCohort:
         """ :returns: the prediction interval of the mean survival time"""
         return self._sumStat_meanSurvivalTime.get_PI(alpha)
 
+    def get_over_time(self):
+        flatSurvivalTimes = []
+        for x in self._survivalTimes:
+            for y in x:
+                flatSurvivalTimes.append(y)
+        count_over = 0
+        for x in flatSurvivalTimes:
+                if x > THRESHHOLD:
+                    count_over += 1
+        return count_over/len(flatSurvivalTimes)
+
+
 MORTALITY_PROB = 0.1    # annual probability of mortality
 TIME_STEPS = 100        # simulation length
 REAL_POP_SIZE = 573     # size of the real cohort to make the projections for
-NUM_SIM_COHORTS = 10   # number of simulated cohorts used for making projections
+NUM_SIM_COHORTS = 100   # number of simulated cohorts used for making projections
 ALPHA = 0.05            # significance level
+THRESHHOLD = 5
 
 # calculating prediction interval for mean survival time
 # create multiple cohorts
@@ -231,6 +232,4 @@ multiCohort = MultiCohort(
 # simulate all cohorts
 multiCohort.simulate(TIME_STEPS)
 
-print(multiCohort.get_percentage_over())
-
-
+print ("The percentage of patients survived beyond 5 years = ",multiCohort.get_over_time())

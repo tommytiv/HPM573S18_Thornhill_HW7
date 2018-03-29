@@ -17,4 +17,4 @@ multiCohort = Cls.MultiCohort(
 # simulate all cohorts
 multiCohort.simulate(TIME_STEPS)
 
-print (multiCohort.get_percentage_over())
+print (multiCohort.get_percentage_over)
