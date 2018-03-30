@@ -217,7 +217,7 @@ class MultiCohort:
 
 MORTALITY_PROB = 0.1    # annual probability of mortality
 TIME_STEPS = 100        # simulation length
-REAL_POP_SIZE = 5     # size of the real cohort to make the projections for
+REAL_POP_SIZE = 573     # size of the real cohort to make the projections for
 NUM_SIM_COHORTS = 10   # number of simulated cohorts used for making projections
 ALPHA = 0.05            # significance level
 THRESHHOLD = 5

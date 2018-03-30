@@ -3,6 +3,6 @@ The number of participants that survived beyond 5 years in a cohort of 𝑁 part
 follows a binomial distribution.
 
 Parameters
-N = The number of patients = 573
-p ∈ [0,1]
+𝑁 = The number of patients = 573
+p = 0.5724258289703316
 """
