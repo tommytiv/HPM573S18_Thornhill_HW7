@@ -1,7 +1,5 @@
 from enum import Enum
 import numpy as np
-import scr.SamplePathClasses as PathCls
-import scr.StatisticalClasses as Stat
 
 
 class HealthStat(Enum):
@@ -10,7 +8,7 @@ class HealthStat(Enum):
     DEAD = 0
 
 
-class Patient:
+class Patient(object):
     def __init__(self, id, mortality_prob):
         """ initiates a patient
         :param id: ID of the patient
@@ -41,7 +39,6 @@ class Patient:
 
     def get_survival_time(self):
         """ returns the patient survival time """
-
         # return survival time only if the patient has died
         if self._healthState == HealthStat.DEAD:
             return self._survivalTime
@@ -56,9 +53,8 @@ class Cohort:
         :param pop_size: population size of this cohort
         :param mortality_prob: probability of death for each patient in this cohort over a time-step (must be in [0,1])
         """
-        self._initialPopSize = pop_size # initial population size
         self._patients = []      # list of patients
-        self._survivalTimes = []    # list to store survival time of each patient
+        self._survivalTimes = []  # list to store survival time of each patient
 
         # populate the cohort
         for i in range(pop_size):
@@ -70,9 +66,7 @@ class Cohort:
     def simulate(self, n_time_steps):
         """ simulate the cohort of patients over the specified number of time-steps
         :param n_time_steps: number of time steps to simulate the cohort
-        :returns simulation outputs from simulating this cohort
         """
-
         # simulate all patients
         for patient in self._patients:
             # simulate
@@ -82,155 +76,34 @@ class Cohort:
             if not (value is None):
                 self._survivalTimes.append(value)
 
-        # return cohort outcomes for this simulated class
-        return CohortOutcomes(self)
-
-    def get_survival_times(self):
-        """ :returns the survival times of the patients in this cohort"""
-        return self._survivalTimes
-
-    def get_initial_pop_size(self):
-        """ :returns the initial population size of this cohort"""
-        return self._initialPopSize
-
-
-class CohortOutcomes:
-    def __init__(self, simulated_cohort):
-        """ extracts outcomes of a simulated cohort
-        :param simulated_cohort: a cohort after being simulated"""
-
-        self._simulatedCohort = simulated_cohort
-
-        # summary statistics on survival times
-        self._sumStat_patientSurvivalTimes = \
-            Stat.SummaryStat('Patient survival times', self._simulatedCohort.get_survival_times())
-
     def get_ave_survival_time(self):
         """ returns the average survival time of patients in this cohort """
-        return self._sumStat_patientSurvivalTimes.get_mean()
+        return sum(self._survivalTimes)/len(self._survivalTimes)
 
-    def get_CI_survival_time(self, alpha):
-        """
-        :param alpha: confidence level
-        :return: t-based confidence interval
-        """
-        return self._sumStat_patientSurvivalTimes.get_t_CI(alpha)
-
-    def get_survival_curve(self):
-        """ returns the sample path for the number of living patients over time """
-
-        # find the initial population size
-        n_pop = self._simulatedCohort.get_initial_pop_size()
-        # sample path (number of alive patients over time)
-        n_living_patients = PathCls.SamplePathBatchUpdate('# of living patients', 0, n_pop)
-
-        # record the times of deaths
-        for obs in self._simulatedCohort.get_survival_times():
-            n_living_patients.record(time=obs, increment=-1)
-
-        return n_living_patients
-
-    def get_survival_times(self):
-        """ :returns the survival times of the patients in this cohort"""
-        return self._simulatedCohort.get_survival_times()
-
-
-class MultiCohort:
-    """ simulates multiple cohorts with different parameters """
-
-    def __init__(self, ids, pop_sizes, mortality_probs):
-        """
-        :param ids: a list of ids for cohorts to simulate
-        :param pop_sizes: a list of population sizes of cohorts to simulate
-        :param mortality_probs: a list of the mortality probabilities
-        """
-        self._ids = ids
-        self._popSizes = pop_sizes
-        self._mortalityProbs = mortality_probs
-
-        self._survivalTimes = []      # two dimensional list of patient survival time from each simulated cohort
-        self._meanSurvivalTimes = []   # list of mean patient survival time for each simulated cohort
-        self._sumStat_meanSurvivalTime = None
-
-    def simulate(self, n_time_steps):
-        """ simulates all cohorts """
-
-        for i in range(len(self._ids)):
-            # create a cohort
-            cohort = Cohort(self._ids[i], self._popSizes[i], self._mortalityProbs[i])
-            # simulate the cohort
-            output = cohort.simulate(n_time_steps)
-            # store all patient surival times from this cohort
-            self._survivalTimes.append(cohort.get_survival_times())
-            # store average survival time for this cohort
-            self._meanSurvivalTimes.append(output.get_ave_survival_time())
-
-        # after simulating all cohorts
-        # summary statistics of mean survival time
-        self._sumStat_meanSurvivalTime = Stat.SummaryStat('Mean survival time', self._meanSurvivalTimes)
-
-    def get_cohort_mean_survival(self, cohort_index):
-        """ returns the mean survival time of an specified cohort
-        :param cohort_index: integer over [0, 1, ...] corresponding to the 1st, 2ndm ... simulated cohort
-        """
-        return self._meanSurvivalTimes[cohort_index]
-
-    def get_cohort_CI_mean_survival(self, cohort_index, alpha):
-        """ :returns: the confidence interval of the mean survival time for a specified cohort
-        :param cohort_index: integer over [0, 1, ...] corresponding to the 1st, 2ndm ... simulated cohort
-        :param alpha: significance level
-        """
-        st = Stat.SummaryStat('', self._survivalTimes[cohort_index])
-        return st.get_t_CI(alpha)
-
-    def get_all_mean_survival(self):
-        """ :returns a list of mean survival time for all simulated cohorts"""
-        return self._meanSurvivalTimes
-
-    def get_overall_mean_survival(self):
-        """ :returns the overall mean survival time (the mean of the mean survival time of all cohorts)"""
-        return self._sumStat_meanSurvivalTime.get_mean()
-
-    def get_cohort_PI_survival(self, cohort_index, alpha):
-        """ :returns: the prediction interval of the survival time for a specified cohort
-        :param cohort_index: integer over [0, 1, ...] corresponding to the 1st, 2ndm ... simulated cohort
-        :param alpha: significance level
-        """
-        st = Stat.SummaryStat('', self._survivalTimes[cohort_index])
-        return st.get_PI(alpha)
-
-    def get_PI_mean_survival(self, alpha):
-        """ :returns: the prediction interval of the mean survival time"""
-        return self._sumStat_meanSurvivalTime.get_PI(alpha)
-
-    def get_percentage_over(self):
-        """returns the percentage of survivors over 5 years"""
+    def get_over_time(self):
         count_over = 0
         for x in self._survivalTimes:
-            for y in x:
-                if y > THRESHHOLD:
-                    count_over += 1
+            if x > YEAR:
+                count_over += 1
         return count_over
 
-    def get_test(self):
-        return self._survivalTimes
 
 MORTALITY_PROB = 0.1    # annual probability of mortality
 TIME_STEPS = 100        # simulation length
-REAL_POP_SIZE = 573     # size of the real cohort to make the projections for
-NUM_SIM_COHORTS = 10   # number of simulated cohorts used for making projections
+SIM_POP_SIZE = 573     # population size of the simulated cohort
 ALPHA = 0.05            # significance level
-THRESHHOLD = 5
+YEAR = 5
 
-# calculating prediction interval for mean survival time
-# create multiple cohorts
-multiCohort = MultiCohort(
-    ids=range(NUM_SIM_COHORTS),   # [0, 1, 2 ..., NUM_SIM_COHORTS-1]
-    pop_sizes=[REAL_POP_SIZE] * NUM_SIM_COHORTS,  # [REAL_POP_SIZE, REAL_POP_SIZE, ..., REAL_POP_SIZE]
-    mortality_probs=[MORTALITY_PROB]*NUM_SIM_COHORTS  # [p, p, ....]
-)
-# simulate all cohorts
-multiCohort.simulate(TIME_STEPS)
 
-print (multiCohort.get_percentage_over())
-print (multiCohort.get_test())
+# create a cohort of patients
+myCohort = Cohort(id=1, pop_size=SIM_POP_SIZE, mortality_prob=MORTALITY_PROB)
+
+# simulate the cohort
+myCohort.simulate(TIME_STEPS)
+
+# print the patient survival time
+print('Average survival time (years):', myCohort.get_ave_survival_time())
+#print('95% CI of average survival time (years)', myCohort.get_CI_survival_time(ALPHA))
+
+print ("Patients who survived over 5 years: ", myCohort.get_over_time())
+print ("Percentage of patients who survived over 5 years: ", myCohort.get_over_time()/SIM_POP_SIZE)
