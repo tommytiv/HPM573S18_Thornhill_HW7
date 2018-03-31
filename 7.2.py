@@ -4,5 +4,5 @@ follows a binomial distribution.
 
 Parameters
 𝑁 = The number of patients = 573
-p = 0.5724258289703316
+p = 0.50
 """

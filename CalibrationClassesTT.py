@@ -7,7 +7,6 @@ import scr.FormatFunctions as FormatSupport
 import SurvivalClassesTT as SurvivalCls
 import CalibrationSettingsTT as CalibSets
 
-
 class CalibrationColIndex(Enum):
     """ indices of columns in the calibration results cvs file  """
     ID = 0          # cohort ID
@@ -50,15 +49,15 @@ class Calibration:
         for cohort_id in self._cohortIDs:
 
             # get the average survival time for this cohort
-            mean = multiCohort.get_cohort_mean_survival(cohort_id)
+            mean5 = multiCohort.get_cohorts_survival_5(cohort_id)
 
             # construct a gaussian likelihood
             # with mean calculated from the simulated data and standard deviation from the clinical study.
             # evaluate this pdf (probability density function) at the mean reported in the clinical study.
-            weight = stat.norm.pdf(
-                x=CalibSets.OBS_MEAN,
-                loc=mean,
-                scale=CalibSets.OBS_STDEV)
+            weight = stat.binom._pmf(
+                x=mean5 - CalibSets.OBS_MEAN,
+                n=CalibSets.OBS_N,
+                p=CalibSets.PROBABILITY)
 
             # store the weight
             self._weights.append(weight)

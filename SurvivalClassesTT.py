@@ -93,15 +93,12 @@ class Cohort:
         """ :returns the initial population size of this cohort"""
         return self._initialPopSize
 
-    def get_over_time(self):
+    def get_survival_times5 (self):
         count_over = 0
         for x in self._survivalTimes:
-            if x > YEAR:
+            if x > 5:
                 count_over += 1
-        return count_over
-
-    def get_percentage_over_time(self):
-        return myCohort.get_over_time()/SIM_POP_SIZE
+        return count_over/len(self._patients)
 
 class CohortOutcomes:
     def __init__(self, simulated_cohort):
@@ -143,8 +140,6 @@ class CohortOutcomes:
         """ :returns the survival times of the patients in this cohort"""
         return self._simulatedCohort.get_survival_times()
 
-
-
 class MultiCohort:
     """ simulates multiple cohorts with different parameters """
 
@@ -161,6 +156,7 @@ class MultiCohort:
         self._survivalTimes = []      # two dimensional list of patient survival time from each simulated cohort
         self._meanSurvivalTimes = []   # list of mean patient survival time for each simulated cohort
         self._sumStat_meanSurvivalTime = None
+        self._survivalTimes5 = []
 
     def simulate(self, n_time_steps):
         """ simulates all cohorts """
@@ -174,16 +170,22 @@ class MultiCohort:
             self._survivalTimes.append(cohort.get_survival_times())
             # store average survival time for this cohort
             self._meanSurvivalTimes.append(output.get_ave_survival_time())
+            # store all survival time 5 years
+            self._survivalTimes5.append(cohort.get_survival_times5())
 
         # after simulating all cohorts
         # summary statistics of mean survival time
         self._sumStat_meanSurvivalTime = Stat.SummaryStat('Mean survival time', self._meanSurvivalTimes)
+        self._sumStat_SurvivalTime5 = Stat.SummaryStat('Mean survival 5 time', self._survivalTimes5)
 
     def get_cohort_mean_survival(self, cohort_index):
         """ returns the mean survival time of an specified cohort
         :param cohort_index: integer over [0, 1, ...] corresponding to the 1st, 2ndm ... simulated cohort
         """
         return self._meanSurvivalTimes[cohort_index]
+
+    def get_cohorts_survival_5 (self, cohort_index):
+            return self._survivalTimes5[cohort_index]
 
     def get_cohort_CI_mean_survival(self, cohort_index, alpha):
         """ :returns: the confidence interval of the mean survival time for a specified cohort
@@ -212,4 +214,3 @@ class MultiCohort:
     def get_PI_mean_survival(self, alpha):
         """ :returns: the prediction interval of the mean survival time"""
         return self._sumStat_meanSurvivalTime.get_PI(alpha)
-
